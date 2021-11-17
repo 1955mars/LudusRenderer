@@ -34,6 +34,10 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+//Light
+glm::vec3 lightPos = glm::vec3(5.0f, 5.0f, -5.0f);
+glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
 //Timing
 float deltaTime = 0.0f;
 float lastTime = 0.0f;
@@ -75,7 +79,8 @@ int main(void)
 
 
     //Shaders
-    Shader shader{ "res/shaders/Basic.shader" };
+    Shader lightShader{ "res/shaders/Light.shader" };
+    Shader lightSourceShader{ "res/shaders/LightSource.shader" };
 
     //Geometry
     float vertices[] = {
@@ -140,23 +145,28 @@ int main(void)
         2, 3, 0
     };
     
-    VertexArray va;
     VertexBuffer vb(vertices, sizeof(vertices));
     VertexBufferLayout layout;
     layout.Push<float>(3);
     layout.Push<float>(2);
-    va.AddBuffer(vb, layout);
+
+    VertexArray objectVA;
+    objectVA.AddBuffer(vb, layout);
+    glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f);
     //IndexBuffer ib(indices, sizeof(indices));
 
-    
+    VertexArray lightSourceVA;
+    lightSourceVA.AddBuffer(vb, layout);
+
+
     // Load and create textures
-    Texture texture1{"res/textures/container.jpg"};
-    Texture texture2{ "res/textures/awesomeface.png" };
+    //Texture texture1{"res/textures/container.jpg"};
+    //Texture texture2{ "res/textures/awesomeface.png" };
 
     // Tell opengl for each sampler to which texture unit it belongs to (one time setup)
-    shader.Bind();
-    shader.SetUniform1i("texture1", 0);
-    shader.SetUniform1i("texture2", 1);
+    //lightShader.Bind();
+    //lightShader.SetUniform1i("texture1", 0);
+    //lightShader.SetUniform1i("texture2", 1);
 
     //Reset the objects created. Is it needed?
     //va.Unbind();
@@ -178,32 +188,47 @@ int main(void)
         processInput(window);
 
         //Rendering
-        glClearColor(1.0f, 0.5f, 0.31f, 1);
+        glClearColor(0.0f, 0.0f, 0.0f, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //Bind textures on corresponding texture units
-        texture1.Bind(0);
-        texture2.Bind(1);
+        //texture1.Bind(0);
+        //texture2.Bind(1);
         
-        //Bind shader & set its uniforms
-        shader.Bind();
+        //Bind light shader & set its uniforms
+        lightShader.Bind();
         glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
-        shader.SetUniformMat4f("proj", proj);
-        shader.SetUniformMat4f("view", view);
+        lightShader.SetUniformMat4f("proj", proj);
+        lightShader.SetUniformMat4f("view", view);
+        lightShader.SetUniform3f("lightColor", lightColor.r, lightColor.g, lightColor.b);
+        lightShader.SetUniform3f("objectColor", objectColor.r, objectColor.g, objectColor.b);
 
         //Render Boxes
-        va.Bind();
+        objectVA.Bind();
         for (unsigned int i = 0; i < 10; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cubePositions[i]);
             float angle = 20.0f * (i+1);
             model = glm::rotate(model, (float)glfwGetTime() * glm::radians(angle), glm::vec3(0.5f, 0.3f, 0.7f));
-            shader.SetUniformMat4f("model", model);
+            lightShader.SetUniformMat4f("model", model);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
+
+        //Bind lightSource shader & set its uniforms
+        lightSourceShader.Bind();
+        lightSourceShader.SetUniformMat4f("proj", proj);
+        lightSourceShader.SetUniformMat4f("view", view);
+
+        lightSourceVA.Bind();
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPos);
+        lightSourceShader.SetUniformMat4f("model", model);
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
         //glDrawElements(GL_TRIANGLES, ib.GetElementCount(), GL_UNSIGNED_INT, nullptr);
 

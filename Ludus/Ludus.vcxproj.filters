@@ -40,6 +40,8 @@
   <ItemGroup>
     <None Include="conanfile.py" />
     <None Include="res\shaders\Basic.shader" />
+    <None Include="res\shaders\LightSource.shader" />
+    <None Include="res\shaders\Light.shader" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\linmath.h">
