@@ -25,6 +25,24 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
+struct Material
+{
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+
+    float shininess;
+};
+
+struct Light
+{
+    glm::vec3 position;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
 const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
 
@@ -35,8 +53,14 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 //Light
-glm::vec3 lightPos = glm::vec3(5.0f, 0.0f, 5.0f);
-glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+Light light
+{
+    glm::vec3(5.0f, 0.0f, 5.0f),
+
+    glm::vec3(0.2f, 0.2f, 0.2f),
+    glm::vec3(0.5f, 0.5f, 0.5f),
+    glm::vec3(1.0f, 1.0f, 1.0f)
+};
 
 //Timing
 float deltaTime = 0.0f;
@@ -191,7 +215,14 @@ int main(void)
     layout1.Push<float>(3);
     VertexArray objectVA;
     objectVA.AddBuffer(vb1, layout1);
-    glm::vec3 objectColor = glm::vec3(1.0f, 0.5f, 0.31f);
+    Material material
+    {
+        glm::vec3(1.0f, 0.5f, 0.31f),
+        glm::vec3(1.0f, 0.5f, 0.31f),
+        glm::vec3(0.5f, 0.5f, 0.5f),
+
+        32.0f
+    };
 
 
     VertexBuffer vb2(vertices2, sizeof(vertices2));
@@ -244,15 +275,22 @@ int main(void)
         lightShader.SetUniformMat4f("proj", proj);
         lightShader.SetUniformMat4f("view", view);
 
-        float radius = 3.0f;
-        lightPos.x = radius * cos((float)glfwGetTime());
-        lightPos.z = radius * sin((float)glfwGetTime());
+        float radius = 10.0f;
+        light.position.x = radius * cos((float)glfwGetTime());
+        light.position.z = radius * sin((float)glfwGetTime());
 
         auto& camPos = camera.GetCameraPos();
         lightShader.SetUniform3f("viewPos", camPos.x, camPos.y, camPos.z);
-        lightShader.SetUniform3f("lightPos", lightPos.x, lightPos.y, lightPos.z);
-        lightShader.SetUniform3f("lightColor", lightColor.r, lightColor.g, lightColor.b);
-        lightShader.SetUniform3f("objectColor", objectColor.r, objectColor.g, objectColor.b);
+       
+        lightShader.SetUniform3f("light.position", light.position.x, light.position.y, light.position.z);
+        lightShader.SetUniform3f("light.ambient", light.ambient.r, light.ambient.g, light.ambient.b);
+        lightShader.SetUniform3f("light.diffuse", light.diffuse.r, light.diffuse.g, light.diffuse.b);
+        lightShader.SetUniform3f("light.specular", light.specular.r, light.specular.g, light.specular.b);
+
+        lightShader.SetUniform3f("material.ambient", material.ambient.r, material.ambient.g, material.ambient.b);
+        lightShader.SetUniform3f("material.diffuse", material.diffuse.r, material.diffuse.g, material.diffuse.b);
+        lightShader.SetUniform3f("material.specular", material.specular.r, material.specular.g, material.specular.b);
+        lightShader.SetUniform1f("material.shininess", material.shininess);
 
         //Render Boxes
         objectVA.Bind();
@@ -274,7 +312,7 @@ int main(void)
 
         lightSourceVA.Bind();
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
+        model = glm::translate(model, light.position);
         lightSourceShader.SetUniformMat4f("model", model);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
