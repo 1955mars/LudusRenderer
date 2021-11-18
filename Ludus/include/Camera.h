@@ -30,6 +30,8 @@ public:
 
 	glm::mat4 GetViewMatrix();
 
+	inline const glm::vec3& GetCameraPos() const { return m_Position; }
+
 private:
 	void UpdateCameraVectors();
 
