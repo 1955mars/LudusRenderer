@@ -34,13 +34,26 @@ struct Material
     float shininess;
 };
 
-struct Light
+struct DirLight
+{
+    glm::vec3 direction;
+
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
+struct PointLight
 {
     glm::vec3 position;
 
     glm::vec3 ambient;
     glm::vec3 diffuse;
     glm::vec3 specular;
+
+    float constant;
+    float linear;
+    float quadratic;
 };
 
 const unsigned int SCR_WIDTH = 1600;
@@ -52,14 +65,22 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-//Light
-Light light
+DirLight dirLight
 {
-    glm::vec3(5.0f, 0.0f, 5.0f),
+    glm::vec3(1.0f, -1.0f, 0.0f),
 
     glm::vec3(0.2f, 0.2f, 0.2f),
     glm::vec3(0.5f, 0.5f, 0.5f),
     glm::vec3(1.0f, 1.0f, 1.0f)
+};
+
+PointLight pointLight
+{
+    glm::vec3(0.0f, 0.0f, 5.0f),
+
+    glm::vec3(0.2f, 0.2f, 0.2f),
+    glm::vec3(0.5f, 0.5f, 0.5f),
+    glm::vec3(1.0f, 1.0f, 1.0f),
 };
 
 //Timing
@@ -269,17 +290,26 @@ int main(void)
         lightShader.SetUniformMat4f("proj", proj);
         lightShader.SetUniformMat4f("view", view);
 
-        float radius = 10.0f;
-        light.position.x = radius * cos((float)glfwGetTime());
-        light.position.z = radius * sin((float)glfwGetTime());
+        //float radius = 10.0f;
+        //light.position.x = radius * cos((float)glfwGetTime());
+        //light.position.z = radius * sin((float)glfwGetTime());
 
         auto& camPos = camera.GetCameraPos();
         lightShader.SetUniform3f("viewPos", camPos.x, camPos.y, camPos.z);
        
-        lightShader.SetUniform3f("light.position", light.position.x, light.position.y, light.position.z);
-        lightShader.SetUniform3f("light.ambient", light.ambient.r, light.ambient.g, light.ambient.b);
-        lightShader.SetUniform3f("light.diffuse", light.diffuse.r, light.diffuse.g, light.diffuse.b);
-        lightShader.SetUniform3f("light.specular", light.specular.r, light.specular.g, light.specular.b);
+        lightShader.SetUniform3f("dirLight.direction", dirLight.direction.x, dirLight.direction.y, dirLight.direction.z);
+        lightShader.SetUniform3f("dirLight.ambient",  dirLight.ambient.r,  dirLight.ambient.g,  dirLight.ambient.b);
+        lightShader.SetUniform3f("dirLight.diffuse",  dirLight.diffuse.r,  dirLight.diffuse.g,  dirLight.diffuse.b);
+        lightShader.SetUniform3f("dirLight.specular", dirLight.specular.r, dirLight.specular.g, dirLight.specular.b);
+
+        lightShader.SetUniform3f("pointLights[0].position", pointLight.position.x, pointLight.position.y, pointLight.position.z);
+        lightShader.SetUniform3f("pointLights[0].ambient", pointLight.ambient.r, pointLight.ambient.g, pointLight.ambient.b);
+        lightShader.SetUniform3f("pointLights[0].diffuse", pointLight.diffuse.r, pointLight.diffuse.g, pointLight.diffuse.b);
+        lightShader.SetUniform3f("pointLights[0].specular", pointLight.specular.r, pointLight.specular.g, pointLight.specular.b);
+        lightShader.SetUniform1f("pointLights[0].constant", 1.0f);
+        lightShader.SetUniform1f("pointLights[0].linear", 0.07f);
+        lightShader.SetUniform1f("pointLights[0].quadratic", 0.017f);
+
 
         //lightShader.SetUniform3f("material.ambient", material.ambient.r, material.ambient.g, material.ambient.b);
         //lightShader.SetUniform3f("material.diffuse", material.diffuse.r, material.diffuse.g, material.diffuse.b);
@@ -293,7 +323,7 @@ int main(void)
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cubePositions[i]);
             float angle = 20.0f * (i+1);
-            model = glm::rotate(model, (float)glfwGetTime() * glm::radians(angle), glm::vec3(0.5f, 0.3f, 0.7f));
+            model = glm::rotate(model,  glm::radians(angle), glm::vec3(0.5f, 0.3f, 0.7f));
             lightShader.SetUniformMat4f("model", model);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -306,7 +336,8 @@ int main(void)
 
         lightSourceVA.Bind();
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, light.position);
+        model = glm::translate(model, pointLight.position);
+        model = glm::scale(model, glm::vec3(0.25f, 0.25f, 0.25f));
         lightSourceShader.SetUniformMat4f("model", model);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
