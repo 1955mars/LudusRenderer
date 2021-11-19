@@ -16,6 +16,7 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "Camera.h"
+#include "Model.h"
 
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -69,7 +70,7 @@ DirLight dirLight
 {
     glm::vec3(1.0f, -1.0f, 0.0f),
 
-    glm::vec3(0.2f, 0.2f, 0.2f),
+    glm::vec3(0.1f, 0.1f, 0.1f),
     glm::vec3(0.5f, 0.5f, 0.5f),
     glm::vec3(1.0f, 1.0f, 1.0f)
 };
@@ -78,7 +79,7 @@ PointLight pointLight
 {
     glm::vec3(0.0f, 0.0f, 5.0f),
 
-    glm::vec3(0.2f, 0.2f, 0.2f),
+    glm::vec3(0.1f, 0.1f, 0.1f),
     glm::vec3(0.5f, 0.5f, 0.5f),
     glm::vec3(1.0f, 1.0f, 1.0f),
 };
@@ -231,21 +232,21 @@ int main(void)
     };
 
     
-    VertexBuffer vb1(vertices1, sizeof(vertices1));
-    VertexBufferLayout layout1;
-    layout1.Push<float>(3);
-    layout1.Push<float>(3);
-    layout1.Push<float>(2);
-    VertexArray objectVA;
-    objectVA.AddBuffer(vb1, layout1);
-    Material material
-    {
-        glm::vec3(1.0f, 0.5f, 0.31f),
-        glm::vec3(1.0f, 0.5f, 0.31f),
-        glm::vec3(0.5f, 0.5f, 0.5f),
+    //VertexBuffer vb1(vertices1, sizeof(vertices1));
+    //VertexBufferLayout layout1;
+    //layout1.Push<float>(3);
+    //layout1.Push<float>(3);
+    //layout1.Push<float>(2);
+    //VertexArray objectVA;
+    //objectVA.AddBuffer(vb1, layout1);
+    //Material material
+    //{
+    //    glm::vec3(1.0f, 0.5f, 0.31f),
+    //    glm::vec3(1.0f, 0.5f, 0.31f),
+    //    glm::vec3(0.5f, 0.5f, 0.5f),
 
-        32.0f
-    };
+    //    32.0f
+    //};
 
 
     VertexBuffer vb2(vertices2, sizeof(vertices2));
@@ -256,14 +257,19 @@ int main(void)
 
 
     // Load and create textures
-    Texture diffuseMap{"res/textures/container2.png"};
-    Texture specularMap{ "res/textures/container2_specular.png" };
+    //Texture diffuseMap{"res/models/backpack/diffuse.jpg"};
+    //Texture specularMap{ "res/models/backpack/specular.jpg" };
+    //std::cout << "id diffuse: " << diffuseMap.GetId() << std::endl;
+    //std::cout << "id specular: " << specularMap.GetId() << std::endl;
+
 
     // Tell opengl for each sampler to which texture unit it belongs to (one time setup)
-    lightShader.Bind();
-    lightShader.SetUniform1i("material.diffuseMap", 0);
-    lightShader.SetUniform1i("material.specularMap", 1);
+    //lightShader.Bind();
+    //lightShader.SetUniform1i("material.texture_diffuse0", 0);
+    //lightShader.SetUniform1i("material.texture_specular0", 1);
 
+
+    Model backpack{ "res/models/backpack/backpack.obj" };
 
     while (!glfwWindowShouldClose(window))
     {
@@ -280,8 +286,8 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //Bind textures on corresponding texture units
-        diffuseMap.Bind(0);
-        specularMap.Bind(1);
+        //diffuseMap.Bind(0);
+        //specularMap.Bind(1);
         
         //Bind light shader & set its uniforms
         lightShader.Bind();
@@ -290,9 +296,9 @@ int main(void)
         lightShader.SetUniformMat4f("proj", proj);
         lightShader.SetUniformMat4f("view", view);
 
-        //float radius = 10.0f;
-        //light.position.x = radius * cos((float)glfwGetTime());
-        //light.position.z = radius * sin((float)glfwGetTime());
+        float radius = 10.0f;
+        pointLight.position.x = radius * cos((float)glfwGetTime());
+        pointLight.position.z = radius * sin((float)glfwGetTime());
 
         auto& camPos = camera.GetCameraPos();
         lightShader.SetUniform3f("viewPos", camPos.x, camPos.y, camPos.z);
@@ -314,20 +320,19 @@ int main(void)
         //lightShader.SetUniform3f("material.ambient", material.ambient.r, material.ambient.g, material.ambient.b);
         //lightShader.SetUniform3f("material.diffuse", material.diffuse.r, material.diffuse.g, material.diffuse.b);
         //lightShader.SetUniform3f("material.specular", material.specular.r, material.specular.g, material.specular.b);
-        lightShader.SetUniform1f("material.shininess", material.shininess);
+        lightShader.SetUniform1f("material.shininess", 32.0f);
 
         //Render Boxes
-        objectVA.Bind();
-        for (unsigned int i = 0; i < 10; i++)
+        for (unsigned int i = 0; i < 1; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * (i+1);
+            float angle = 20.0f * (i);
             model = glm::rotate(model,  glm::radians(angle), glm::vec3(0.5f, 0.3f, 0.7f));
             lightShader.SetUniformMat4f("model", model);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            backpack.Draw(lightShader);
         }
+
 
         //Bind lightSource shader & set its uniforms
         lightSourceShader.Bind();

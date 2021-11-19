@@ -5,8 +5,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Texture::Texture(const std::string& path)
-	:m_RendererId(0), m_FilePath(path), m_LocalBuffer(nullptr), m_Width(0), m_Height(0), m_BPP(0)
+Texture::Texture(const std::string& path, const std::string& typeName)
+	:m_RendererId(0), m_FilePath(path), m_TypeName(typeName), m_Width(0), m_Height(0), m_BPP(0)
 {
 	stbi_set_flip_vertically_on_load(1);
 
@@ -18,11 +18,19 @@ Texture::Texture(const std::string& path)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	m_LocalBuffer = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 0);
+	unsigned char* m_LocalBuffer = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 0);
 
 	if (m_LocalBuffer)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, m_BPP == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, m_LocalBuffer);
+		GLenum format;
+		if (m_BPP == 1)
+			format = GL_RED;
+		else if (m_BPP == 3)
+			format = GL_RGB;
+		else if (m_BPP == 4)
+			format = GL_RGBA;
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, format, GL_UNSIGNED_BYTE, m_LocalBuffer);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	
@@ -31,7 +39,7 @@ Texture::Texture(const std::string& path)
 
 Texture::~Texture()
 {
-	glDeleteTextures(1, &m_RendererId);
+	
 }
 
 void Texture::Bind(unsigned int slot) const
